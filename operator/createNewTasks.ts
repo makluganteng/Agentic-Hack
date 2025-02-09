@@ -30,7 +30,7 @@ function generateRandomName(): string {
 async function createNewTask(taskName: string) {
   try {
     // Send a transaction to the createNewTask function
-    const tx = await helloWorldServiceManager.createNewTask(taskName);
+    const tx = await helloWorldServiceManager.createNewTask(taskName, "0x938B73672E32181a52B52B0fCd2074788B0d2e21", "0xb836c597BC6733F4BAf182CB7BA9FBeEC46F73Ff", "0x938B73672E32181a52B52B0fCd2074788B0d2e21");
     
     // Wait for the transaction to be mined
     const receipt = await tx.wait();

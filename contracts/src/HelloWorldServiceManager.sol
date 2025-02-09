@@ -31,6 +31,9 @@ contract HelloWorldServiceManager is ECDSAServiceManagerBase, IHelloWorldService
     // mapping of task indices to hash of abi.encode(taskResponse, taskResponseMetadata)
     mapping(address => mapping(uint32 => bytes)) public allTaskResponses;
 
+    //Whitelisted set of vault contract addresses
+    mapping(address => bool) public whitelistedVaults;
+
     modifier onlyOperator() {
         require(
             ECDSAStakeRegistry(stakeRegistry).operatorRegistered(msg.sender),
@@ -64,11 +67,17 @@ contract HelloWorldServiceManager is ECDSAServiceManagerBase, IHelloWorldService
     /* FUNCTIONS */
     // NOTE: this function creates new task, assigns it a taskId
     function createNewTask(
-        string memory name
+        string memory name,
+        address agentAddress,
+        address userAddress,
+        address to
     ) external returns (Task memory) {
         // create a new task struct
         Task memory newTask;
         newTask.name = name;
+        newTask.agentAddress = agentAddress;
+        newTask.userAddress = userAddress;
+        newTask.to = to;
         newTask.taskCreatedBlock = uint32(block.number);
 
         // store hash of task onchain, emit event, and increase taskNum

@@ -8,6 +8,9 @@ interface IHelloWorldServiceManager {
 
     struct Task {
         string name;
+        address agentAddress;
+        address userAddress;
+        address to;
         uint32 taskCreatedBlock;
     }
 
@@ -23,7 +26,10 @@ interface IHelloWorldServiceManager {
     ) external view returns (bytes memory);
 
     function createNewTask(
-        string memory name
+        string memory name,
+        address agentAddress,
+        address userAddress,
+        address to
     ) external returns (Task memory);
 
     function respondToTask(

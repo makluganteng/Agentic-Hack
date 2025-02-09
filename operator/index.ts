@@ -40,28 +40,40 @@ const ecdsaRegistryContract = new ethers.Contract(ecdsaStakeRegistryAddress, ecd
 const avsDirectory = new ethers.Contract(avsDirectoryAddress, avsDirectoryABI, wallet);
 
 
-const signAndRespondToTask = async (taskIndex: number, taskCreatedBlock: number, taskName: string) => {
-    const message = `Hello, ${taskName}`;
-    const messageHash = ethers.solidityPackedKeccak256(["string"], [message]);
-    const messageBytes = ethers.getBytes(messageHash);
-    const signature = await wallet.signMessage(messageBytes);
+const signAndRespondToTask = async (taskIndex: number, taskCreatedBlock: number, taskName: string, agentAddress: string, userAddress: string, to: string) => {
+    try {
+        const message = `Hello, ${taskName}`;
+        const messageHash = ethers.solidityPackedKeccak256(["string"], [message]);
+        const messageBytes = ethers.getBytes(messageHash);
+        const signature = await wallet.signMessage(messageBytes);
 
-    console.log(`Signing and responding to task ${taskIndex}`);
+        console.log(`Signing and responding to task ${taskIndex}`);
 
-    const operators = [await wallet.getAddress()];
-    const signatures = [signature];
-    const signedTask = ethers.AbiCoder.defaultAbiCoder().encode(
-        ["address[]", "bytes[]", "uint32"],
-        [operators, signatures, ethers.toBigInt(await provider.getBlockNumber()-1)]
-    );
+        const operators = [await wallet.getAddress()];
+        const signatures = [signature];
+        const signedTask = ethers.AbiCoder.defaultAbiCoder().encode(
+            ["address[]", "bytes[]", "uint32"],
+            [operators, signatures, ethers.toBigInt(await provider.getBlockNumber()-1)]
+        );
 
-    const tx = await helloWorldServiceManager.respondToTask(
-        { name: taskName, taskCreatedBlock: taskCreatedBlock },
-        taskIndex,
-        signedTask
-    );
-    await tx.wait();
-    console.log(`Responded to task.`);
+        const tx = await helloWorldServiceManager.respondToTask(
+            { name: taskName, agentAddress: agentAddress, userAddress: userAddress, to: to, taskCreatedBlock: taskCreatedBlock },
+            taskIndex,
+            signedTask
+        );
+        await tx.wait();
+        console.log(`Responded to task.`);
+
+        await fetch(`http://localhost:3000/wallet/sign`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ agentAddress: agentAddress, userAddress: userAddress, to: to })
+        });
+    }catch(error){
+        console.error("Error in responding to task:", error);
+    }
 };
 
 const registerOperator = async () => {
@@ -125,7 +137,8 @@ const monitorNewTasks = async () => {
 
     helloWorldServiceManager.on("NewTaskCreated", async (taskIndex: number, task: any) => {
         console.log(`New task detected: Hello, ${task.name}`);
-        await signAndRespondToTask(taskIndex, task.taskCreatedBlock, task.name);
+        console.log(task);
+        await signAndRespondToTask(taskIndex, task.taskCreatedBlock, task.name, task.agentAddress, task.userAddress, task.to);
     });
 
     console.log("Monitoring for new tasks...");
